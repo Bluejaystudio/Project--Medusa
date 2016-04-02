@@ -1,1 +1,227 @@
+import pygame
+
+
+
+
+##notes##
+#1.) add temp knife and bom
+'''2.) have gun shoot/ use range'''
+#2.) add rate of fire to gun
+#3.) create enemy
+#4.) test gun trajectory to see if it hit
+#5.) have gun face players look direction
+#6.) display enemy helath bars
+#7.) create basic enemy ai
+#8.) add in ammunition
+
+display_x = 800
+display_y = 600
+
+pygame.init()
+
+black = (0,0,0)
+white = (255,255,255)
+green = (0,255,0)
+grey = (230,230,230)
+
+
+
+gameDisplay = pygame.display.set_mode((display_x, display_y))
+
+pygame.display.update()
+
+clock= pygame.time.Clock()
+
+def message_display(text,x,y,size):
+    mediumText = pygame.font.Font('freesansbold.ttf', size)
+    TextSurf, TextRect = text_objects(text, mediumText)
+    TextRect.center = ((x), (y))
+    gameDisplay.blit(TextSurf, TextRect)
+
+def text_objects(text, font):
+    textSurface = font.render(text,True,white)
+    return textSurface, textSurface.get_rect()
+
+def inv_display():
+    message_display(("Inventory"),(inv_x * 2), (inv_y + 25), 30)
+
+def health_display():
+    message_display((str(health)), (lead_x + (25/2)), (lead_y - 5), 10)
+
+def equiped_display():
+    message_display(("Equiped: " + str(equiped)), (100), (display_y - 25), 27)
+
+def lvl_display():
+    message_display(("Lvl: " + str(lvl)), (display_x - 50), (display_y - 25), 30)
+
+def game_loop():
+    #globals
+    
+    #global inventory
+    global inv_up_var
+    global inv_w
+    global inv_h
+    global inv_y
+    global inv_x
+    global equiped
+
+    #global player
+    global health
+    global lead_x
+    global lead_y
+    global lvl
+    # variables
+    gameExit = False
+    
+    # player
+    lead_x = 500
+    lead_y = 300
+    lead_x_change = 0
+    lead_y_change = 0
+    speed = 5
+    health = 50
+    
+    #player lvl
+    lvl = 0
+    current_xp = 1
+    levels = {0: 100,
+              1: 200,
+              2: 400,
+              3: 700,
+              4: 1200,
+              5: 1900}
+    max_xp = levels[lvl]
+    max_lvl = 5
+    
+    #inventory
+    inv_up_var = False
+    inv_y = 100
+    inv_x = 200
+    inv_w = 400
+    inv_h = 400
+    inventory = ['knife', 'gun', 'bomb']
+    inv_pos = 0
+    equiped = inventory[inv_pos]
+
+    #bullet
+    b_range = 200
+    b_time = 6
+    b_speed = 60
+    bullet_x = lead_x
+    bullet_shoot = False
+
+    #loops game
+    while not gameExit:
+        if not bullet_shoot:
+            bullet_x = lead_x
+        #get items in inv
+        items_in_inv = 0
+        for x in inventory:
+            items_in_inv += 1
+        #gets all events
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                gameExit = True
+            if event.type == pygame.KEYDOWN:
+                #movement
+                if event.key == pygame.K_w:
+                    lead_y_change += speed * -1
+                    lead_x_change = 0
+                elif event.key == pygame.K_s:
+                    lead_y_change += speed
+                    lead_x_change = 0
+                elif event.key == pygame.K_a:
+                    lead_x_change += speed * -1
+                    lead_y_change = 0
+                elif event.key == pygame.K_d:
+                    lead_x_change += speed
+                    lead_y_change = 0
+                #other
+                elif event.key == pygame.K_i:
+                    if inv_up_var is False:
+                        inv_up_var = True
+                    else:
+                        inv_up_var = False
+                elif event.key == pygame.K_SPACE:
+                    current_xp += 100
+                # invenotry movement ## quick select #
+                elif event.key == pygame.K_e:
+                    if inv_pos + 1 < items_in_inv:
+                        inv_pos += 1
+                        equiped = inventory[inv_pos]
+                elif event.key == pygame.K_q:
+                    if inv_pos > 0:
+                        inv_pos -= 1
+                        equiped = inventory[inv_pos]
+
+
+            # mouse events
+            clicked = pygame.mouse.get_pressed()
+            if clicked[0] == 1:
+                if not bullet_shoot:
+                    bullet_shoot = True
+                    b_time = 6
+            # reset on key up
+            if event.type == pygame.KEYUP:
+                lead_x_change = 0
+                lead_y_change = 0
+                        
+                
+                
+        # updating position
+        lead_x += lead_x_change
+        lead_y += lead_y_change
+
+        #fill screen
+        gameDisplay.fill(black)
+        
+        # displays
+        health_display()
+        equiped_display()
+        lvl_display()
+
+        # import itmes
+
+        #gun
+        gun = pygame.image.load('gun.jpg')
+        gun = pygame.transform.scale(gun, (15,15))
+        gun = pygame.transform.rotate(gun, 280)
+
+        # bullet
+        if bullet_shoot is True:
+            if b_time > 0:
+                if inventory[inv_pos] == 'gun':
+                    if b_range > 0:
+                        bullet_x -= b_speed
+                        b_range -= b_speed
+                        pygame.draw.rect(gameDisplay, white, [bullet_x, lead_y, 5,5])
+                        b_time -= 1.5
+            elif b_time <= 0 or b_range <= 0:
+                    bullet_shoot = False
+                    b_range = 200
+                
+        # drawing objects
+        if inventory[inv_pos] == 'gun':
+            gameDisplay.blit(gun, ((lead_x - 20), (lead_y + (25 / 2))))
+        pygame.draw.rect(gameDisplay, white, [lead_x, lead_y, 25, 25])
+        pygame.draw.rect(gameDisplay, white, [200,200,30,30])
+        # event controls
+        if inv_up_var is True:
+            pygame.draw.rect(gameDisplay, grey, [inv_x,inv_y,inv_w,inv_h])
+            inv_display()
+
+        #check xp
+        max_xp = levels[lvl]
+        if current_xp >= max_xp:
+            if lvl < max_lvl:
+                current_xp = 0
+                lvl += 1
+                
+        pygame.display.update()
+
+        clock.tick(45)
+
+game_loop()
+pygame.quit
+quit()
 
